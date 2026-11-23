@@ -85,7 +85,8 @@ main { flex: 1; min-width: 0; overflow: auto; padding: 12px; }
 .group button:first-child, .seg button:first-child { border-radius: 6px 0 0 6px; margin-left: 0; }
 .group button:last-child, .seg button:last-child { border-radius: 0 6px 6px 0; }
 .seg button.on { background: #3a2f12; border-color: var(--accent); color: #ffd98a; position: relative; z-index: 1; }
-select.wide { max-width: 330px; min-width: 200px; }
+select.wide { max-width: 180px; min-width: 150px; }
+#exportBtn { margin-left: auto; }
 .ed-hint { padding: 6px 12px; }
 
 .veil { position: fixed; inset: 0; background: rgba(245,165,36,.12); border: 3px dashed var(--accent); display: grid; place-items: center; font-size: 24px; font-weight: 600; z-index: 20; pointer-events: none; }

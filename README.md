@@ -19,6 +19,7 @@ samples and MIDI groove library. None of that is included here.
 
 Opening a song separates the drums from the rest of the mix. When the badge says "Drums
 separated", drag across the part you want on the waveform, for example four bars of the verse.
+To listen first, click anywhere on the waveform and press Space: it plays from there.
 
 ![A song's waveform with a section marked on it, listed below as "Verse"](docs/mark-section.png)
 
@@ -27,13 +28,14 @@ separated", drag across the part you want on the waveform, for example four bars
 Extract finds the tempo and the downbeat, snaps the section to whole bars, and reads the kick,
 snare and hats from the drum stem. The hits appear on a grid directly under the drum waveform,
 so you can see whether each one lines up with what was played. Press Space to loop the section
-and hear the MIDI against the song, the drum stem, or both.
+and hear the MIDI against the song, the drum stem, or both. The loop keeps playing while you
+drag the section's handles or change the tempo.
 
 If something is off, fix it there:
 
 - Click a cell to add or remove a hit, and drag a hit up or down to change how hard it is played.
-- Faint dots are quieter hits the detector heard but left out. The Sensitivity sliders bring
-  them in or drop more.
+- Faint dots are quieter hits the detector heard but left out. The "Pick up quieter hits"
+  sliders bring them in or drop more.
 - BPM, ÷2 and ×2, Bars, Meter, Grid and the Beat 1 buttons correct a wrong tempo or bar line.
 - "Backbeat as" and "Hats as" choose which drum plays the snare and hi-hat hits: snare or rim
   click, hi-hat or shaker.
@@ -56,7 +58,7 @@ There are three ways the pattern can play:
 
 Export writes one `.mid` per layer plus the full groove into `exports/<Song>/`.
 
-![The sensitivity sliders, the feel choices and the Export layers button](docs/feel-export.png)
+![The sliders for picking up quieter hits, the feel choices and the Export layers button](docs/feel-export.png)
 
 ## Install
 
@@ -111,8 +113,8 @@ exported.
 
 | Key | Does |
 | --- | --- |
-| Space | Loop the selected section |
-| Shift+Space | Play the whole song |
+| Space | Loop the selected section. If you clicked somewhere outside it, play the song from there |
+| Shift+Space | Play the song from the playhead |
 | S, D, M, C | Turn the song, drum stem, MIDI and click on or off |
 | E | Extract the selected section |
 | 1 to 9, 0 | Pick a layer, or the full groove |

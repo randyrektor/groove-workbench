@@ -268,6 +268,7 @@ function addSection(start, end) {
   S.sections.push(sec);
   S.sections.sort((a, b) => a.start - b.start);
   S.sel = sec.id;
+  engine.cursor = sec.start;
   return sec;
 }
 
@@ -283,6 +284,8 @@ function select(id) {
   if (S.sel === id) return;
   if (engine.mode === 'loop') engine.stop();
   S.sel = id;
+  const sec = sel();
+  if (sec) engine.cursor = sec.start;
   renderAll(); save();
 }
 
@@ -501,13 +504,21 @@ function loopSpec(sec) {
     beats: () => { const out = [], m = meterOf(g); for (let i = 0; i < g.bars * m.beats; i++) out.push({ sec: i * b, accent: i % m.beats === 0 }); return out; },
   };
 }
-function playLoop() {
+function playLoop(from) {
   const sec = sel();
   if (!sec || !engine.buffers.song) return;
-  engine.playLoop(loopSpec(sec));
+  engine.playLoop(loopSpec(sec), from);
+  engine.cursor = sec.start;  // so Space loops this section again after a stop
   syncTransport(); tickFrame();
 }
-function restartLoop() { if (engine.mode === 'loop') playLoop(); }
+// Carry a change to the section into a loop that is playing, without starting it over.
+function restartLoop() { const sec = sel(); if (engine.mode === 'loop' && sec) engine.updateLoop(loopSpec(sec)); }
+// Is the playhead resting on the selected section? Then Space loops it; otherwise Space
+// plays the song from the playhead, so any part of the song can be heard before marking it.
+function cursorInSel() {
+  const sec = sel();
+  return !!sec && engine.cursor >= sec.start - 0.05 && engine.cursor <= sec.end + 0.05;
+}
 function playSong() {
   if (!engine.buffers.song) return;
   engine.playSong(clamp(engine.cursor, 0, S.song.duration - 0.05));
@@ -658,12 +669,14 @@ function bindOverview() {
       if (d.kind === 'left') { const k = clamp(Math.round(dt / bar), -16 + o.grid.bars, o.grid.bars - 1); g.t0 = o.grid.t0 + k * bar; g.bars = o.grid.bars - k; if (g.t0 < 0) { g.t0 = o.grid.t0; g.bars = o.grid.bars; } }
       syncSpan(sec); requantize(sec);
       renderSections(); syncToolbar(); drawEditor();
+      if (d.kind !== 'move') restartLoop();
     } else {
       const len = o.end - o.start;
       if (d.kind === 'move') { sec.start = clamp(o.start + dt, 0, S.song.duration - len); sec.end = sec.start + len; }
       if (d.kind === 'left') sec.start = clamp(snapBeat(t, w, e.altKey), 0, sec.end - 0.5);
       if (d.kind === 'right') sec.end = clamp(snapBeat(t, w, e.altKey), sec.start + 0.5, S.song.duration);
       renderSections();
+      if (d.kind !== 'move') restartLoop();
     }
     drawOverview();
   });
@@ -677,7 +690,10 @@ function bindOverview() {
       const was = engine.mode;
       if (was) engine.stop();
       engine.cursor = clamp(d.t0, 0, S.song.duration);
-      if (was === 'song') playSong();
+      // While playing, a click moves the sound there: inside the section it keeps looping,
+      // anywhere else it plays the song on from that point.
+      if (was === 'loop' && cursorInSel()) playLoop(engine.cursor);
+      else if (was) playSong();
       drawTops();
       return;
     }
@@ -802,6 +818,11 @@ function syncToolbar() {
   $('#fTiming').value = sec.feel.timing; $('#fVel').value = sec.feel.vel;
   $('#fTimingV').textContent = Math.round(sec.feel.timing * 100) + '%';
   $('#fVelWrap').classList.toggle('off', sec.feel.mode !== 'ni');
+  // Only the controls that do something in this mode are shown.
+  $('#feelPick').hidden = sec.feel.mode !== 'ni';
+  $('#fTimingWrap').hidden = sec.feel.mode === 'quant';
+  $('#fVelWrap').hidden = sec.feel.mode !== 'ni';
+  $('#feelNote').textContent = { quant: 'Every hit exactly on the grid.', played: 'Timing as the drummer on the record played it.', ni: '' }[sec.feel.mode] || '';
   $('#undo').disabled = !S.undo.length;
   const mp = sec.map || {};
   $$('#backbeat button').forEach((b) => b.classList.toggle('on', +b.dataset.p === (mp[38] || 38)));
@@ -1101,7 +1122,7 @@ function bindGlobal() {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && tag !== 'INPUT') { e.preventDefault(); undo(); return; }
     if (tag === 'INPUT' && e.target.type !== 'range' || tag === 'SELECT' || e.metaKey || e.ctrlKey) return;
     const k = e.key.toLowerCase();
-    if (e.code === 'Space') { e.preventDefault(); toggle(e.shiftKey || !sel() ? 'song' : 'loop'); }
+    if (e.code === 'Space') { e.preventDefault(); if (engine.mode) engine.stop(); else toggle(e.shiftKey || !cursorInSel() ? 'song' : 'loop'); }
     else if (k === 's') { mix.song.on = !mix.song.on; applyMix(); }
     else if (k === 'd') { mix.drums.on = !mix.drums.on; applyMix(); }
     else if (k === 'm') { mix.midi.on = !mix.midi.on; applyMix(); }
@@ -1115,6 +1136,8 @@ function bindGlobal() {
 }
 
 try { Object.assign(mix, JSON.parse(localStorage.getItem('gw-mix') || '{}')); } catch (e) { /* defaults */ }
+// Never start silent: with nothing switched on, a new visit would play no sound at all.
+if (!mix.song.on && !mix.drums.on && !mix.midi.on) mix.song.on = true;
 window.GW = { S, engine };
 // ------------------------------------------------------------------ settings
 

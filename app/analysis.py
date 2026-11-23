@@ -175,16 +175,26 @@ def detect(feat, t0, t1, norm=None):
         f0, f1 = max(0, c - 5), min(n, c + 6)
         t = (f0 + int(np.argmax(feat["all"][f0:f1]))) * FRAME
         if raw and t - raw[-1][0] < 0.02:
+            # Two groups found the same attack: it is one hit. Keep the bigger reading of each
+            # band and the time of the stronger one, so a faint tick cannot displace a kick.
+            r = raw[-1]
+            keep_t = r[0] if max(r[1:]) >= max(low, body, crack, air) else t
+            raw[-1] = (keep_t, max(r[1], low), max(r[2], body), max(r[3], crack), max(r[4], air))
             continue
         # The drum head keeps moving after a kick: a second swell of sub with no attack
         # in any other band is the tail of that kick, not another hit.
-        if max(body, crack, air) < 0.08:
+        other = max(body, crack, air)
+        head = None
+        if other < max(0.08, 0.3 * low):
             head = next((i for i in range(len(raw) - 1, max(-1, len(raw) - 4), -1) if t - raw[i][0] < 0.14 and raw[i][1] >= 0.3 * low), None)
-            if head is not None:
-                # Keep the time of the attack; the swell only tells us how big the kick was.
-                r = raw[head]
-                raw[head] = (r[0], max(r[1], low), r[2], r[3], r[4])
-                continue
+        elif raw and t - raw[-1][0] < 0.09 and raw[-1][1] >= 0.3 * low and other < 0.5 * low and other < 0.5 * max(raw[-1][2], raw[-1][3]):
+            # Right behind a kick's attack, mostly sub, and far less attack than that kick had.
+            head = len(raw) - 1
+        if head is not None:
+            # Keep the time of the attack; the swell only tells us how big the kick was.
+            r = raw[head]
+            raw[head] = (r[0], max(r[1], low), r[2], r[3], r[4])
+            continue
         raw.append((t, low, body, crack, air))
 
     inside = [r for r in raw if not norm or norm[0] - 0.05 <= r[0] <= norm[1]] or raw

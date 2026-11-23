@@ -156,27 +156,31 @@ export class Engine {
   }
 
   // loop: { start, len, notes: () => [{sec, p, v}], beats: () => [{sec, accent}] }
-  playLoop(loop) {
+  // from: song time inside the loop to start at (default: the top of the loop).
+  playLoop(loop, from) {
     this._halt();
-    const at = this._start(loop.start, loop);
+    const offset = from != null && from >= loop.start && from < loop.start + loop.len ? from : loop.start;
+    const real = this._start(offset, loop);
     this.mode = 'loop';
-    this._t0 = at; this._loop = loop; this._sched = at;
+    this._loop = loop;
+    this._t0 = real - (offset - loop.start);  // when this pass of the loop would have begun
+    this._sched = real;
     const tick = () => {
       const now = this.ctx.currentTime;
       const horizon = now + 0.14;
       const from = Math.max(this._sched, now);
-      const len = loop.len;
+      const lp = this._loop, at = this._t0, len = lp.len;
       const k0 = Math.floor((from - at) / len) - 1;
       const k1 = Math.floor((horizon - at) / len);
-      const notes = loop.notes();
-      const beats = loop.beats();
+      const notes = lp.notes();
+      const beats = lp.beats();
       for (let k = Math.max(0, k0); k <= k1 + 1; k++) {
         const base = at + k * len;
         for (const n of notes) {
           const t = base + n.sec;
-          if (t >= from && t < horizon && t >= at - 0.001) this.hit(n.p, n.v, t);
+          if (t >= from && t < horizon) this.hit(n.p, n.v, t);
         }
-        if (k >= 0) for (const b of beats) {
+        for (const b of beats) {
           const t = base + b.sec;
           if (t >= from && t < horizon) this.hit(b.accent ? 'clickHi' : 'click', 100, t, 'click');
         }
@@ -185,6 +189,22 @@ export class Engine {
     };
     tick();
     this._timer = setInterval(tick, 25);
+  }
+
+  // Change the loop while it plays, without starting over. If the playhead is left outside
+  // the new loop, it picks up just before the new end (when the end moved in) or from the top.
+  updateLoop(loop) {
+    if (this.mode !== 'loop') return;
+    const now = this.ctx.currentTime, old = this._loop;
+    const pos = old.start + ((((now - this._t0) % old.len) + old.len) % old.len);
+    const end = loop.start + loop.len;
+    if (pos < loop.start || pos >= end - 0.05) {
+      this.playLoop(loop, pos >= end - 0.05 ? Math.max(loop.start, end - 2) : loop.start);
+      return;
+    }
+    for (const src of this.sources) { src.loopStart = loop.start; src.loopEnd = end; }
+    this._loop = loop;
+    this._t0 = now - (pos - loop.start);
   }
 
   stop(ended = false) {
