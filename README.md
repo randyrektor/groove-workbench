@@ -47,9 +47,14 @@ file. Pick a layer to see and hear only the drums it keeps; the rest are dimmed.
 
 ### 4. Add feel and export
 
-The pattern can play exactly on the grid, with the timing of the drummer on the record, or
-with timing and dynamics learned from MIDI grooves you own. Export writes one `.mid` per
-layer plus the full groove into `exports/<Song>/`.
+There are three ways the pattern can play:
+
+- **On the grid**: every hit exactly on its grid position.
+- **As recorded**: the timing and dynamics of the drummer on the record.
+- **Library feel**: timing and dynamics learned from MIDI grooves you own. This one is
+  optional and needs a groove library (see Settings below). The other two work without it.
+
+Export writes one `.mid` per layer plus the full groove into `exports/<Song>/`.
 
 ![The sensitivity sliders, the feel choices and the Export layers button](docs/feel-export.png)
 
@@ -85,13 +90,20 @@ exported.
 - **Drum kit**: your own samples for auditioning the MIDI. A kit is a folder with one
   sub-folder per drum, named with its MIDI note first, such as `36 Kick`. With no kit, simple
   built-in synth drums play.
-- **Learned feel**: point "MIDI folder" at drum-groove `.mid` files you own (for example the
-  grooves bundled with a drum plugin) and press Learn. Only timing and accents are measured;
-  the files are not copied. The same thing from a terminal:
+- **Learned feel**: optional. Point "MIDI folder" at a folder of drum-groove `.mid` files you
+  own, for example the grooves bundled with a drum plugin, and press Learn. Sub-folders are
+  searched too. Only timing and accents are measured; the files are not copied. The same thing
+  from a terminal:
 
   ```
   python3 tools/learn_feel.py "/path/to/your/midi grooves"
   ```
+
+  The grooves need General MIDI drum notes and a tempo, either stored in the file or written
+  in its name, such as "120 bpm". Similar grooves are averaged into a feel once there are at
+  least 8 of them with human timing, so a small or tightly quantized library may only offer
+  single grooves. No grooves are included with this project. Without any, use "On the grid"
+  or "As recorded".
 
 - **Layers**: name each one and pick the drums it keeps.
 

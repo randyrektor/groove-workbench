@@ -470,7 +470,7 @@ async function suggestFeel(sec) {
 async function fillFeelPicker(sec) {
   const pick = $('#feelPick');
   let data;
-  try { data = await loadFeels(sec); } catch (e) { pick.innerHTML = '<option>No learned feel yet (run tools/learn_feel.py)</option>'; return; }
+  try { data = await loadFeels(sec); } catch (e) { pick.innerHTML = '<option>Nothing learned yet. Use Learn in Settings.</option>'; return; }
   if (sel() !== sec) return;
   pick.innerHTML = '';
   const group = (label, items) => {
@@ -484,7 +484,7 @@ async function fillFeelPicker(sec) {
   group('Single grooves from your library near this tempo', data.grooves);
   group('Averaged feel, other grids', data.templates.filter((t) => t.swing !== sec.grid.swing));
   pick._items = [...data.templates, ...data.grooves];
-  if (!pick._items.length) pick.innerHTML = '<option>No learned feel yet (run tools/learn_feel.py)</option>';
+  if (!pick._items.length) pick.innerHTML = '<option>Nothing learned yet. Use Learn in Settings.</option>';
   if (sec.feel.pick && pick._items.some((i) => i.id === sec.feel.pick.id)) pick.value = sec.feel.pick.id;
   else if (sec.feel.pick) { const o = document.createElement('option'); o.value = sec.feel.pick.id; o.textContent = sec.feel.pick.label; pick.prepend(o); pick.value = o.value; }
 }
