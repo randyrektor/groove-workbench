@@ -124,7 +124,11 @@ exported.
 ## Platforms
 
 Developed and tested on macOS (Apple Silicon) with Python 3.12. Linux should work but is
-untested. Windows has no launcher yet; use WSL. Intel Macs cannot install the pinned PyTorch.
+untested. Intel Macs cannot install the pinned PyTorch.
+
+Windows is untested and has no launcher yet. The app itself is plain Python and a web page,
+so the simplest route is to open the folder in a coding agent and say "I'm on Windows, set
+this up for me": `AGENTS.md` has the Windows steps. Drum separation will be slower there.
 
 ## License
 

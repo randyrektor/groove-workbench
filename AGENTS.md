@@ -34,7 +34,7 @@ data. The person supplies those, and your job is to wire them up.
 4. Ask how they want new sections to start out, and write it under `defaults` in
    `config.json` (see "Defaults" below). If they have no preference, leave it out.
 5. If they have a MIDI groove library, learn its feel (see below).
-6. Start the app: `app/run.sh`. The first run creates `app/.venv` and installs the packages in
+6. Start the app: `app/run.sh` (on Windows, see "Windows" below). The first run creates `app/.venv` and installs the packages in
    `app/requirements.txt`. That is a download of about 1 GB on a Mac and several GB on Linux
    with an NVIDIA card (PyTorch), so tell the person first. If the install fails partway, running
    `app/run.sh` again starts it over.
@@ -42,6 +42,45 @@ data. The person supplies those, and your job is to wire them up.
 7. The first song they open triggers a one-time download of the Demucs `htdemucs` model
    weights (about 80 MB) from Hugging Face. Tell them this is expected. A warning about
    `HF_TOKEN` in the server output is harmless.
+
+## Windows
+
+Not tested on Windows yet. `app/run.sh` is a shell script, so on Windows do the same steps by
+hand in PowerShell, from the repo root. Tell the person this path is unverified, and if a step
+fails, fix it for their machine and tell them what you changed.
+
+1. Prerequisites (ask before installing):
+   - ffmpeg on the PATH: `winget install Gyan.FFmpeg`, then open a new terminal.
+   - Python 3.12: `winget install Python.Python.3.12`.
+2. Create the environment and install the packages (about 1 GB or more; tell the person first):
+
+   ```
+   cd app
+   py -3.12 -m venv .venv
+   .venv\Scripts\python -m pip install --upgrade pip
+   .venv\Scripts\python -m pip install -r requirements.txt
+   ```
+
+3. Start the server from the `app` folder and open `http://127.0.0.1:5177`:
+
+   ```
+   $env:PYTHONUTF8 = "1"
+   .venv\Scripts\python server.py
+   ```
+
+   To use another port, set `$env:PORT = "5178"` first.
+
+Things that differ from a Mac:
+
+- Drum separation runs on the processor, so a song can take a minute or two.
+- In `config.json`, write folder paths with forward slashes (`C:/Users/me/Music`) or doubled
+  backslashes. A single backslash is not valid JSON.
+- If a pinned version in `app/requirements.txt` has no Windows build, install the nearest
+  version that does and tell the person which one.
+- The Browse buttons open the Windows folder chooser through PowerShell. If that fails, paths
+  can be typed or pasted into the fields instead.
+- WSL also works with `app/run.sh` as written, but the Browse buttons do nothing there, and
+  folder paths must be the Linux ones (`/mnt/c/Users/...`).
 
 ## Settings screen
 
