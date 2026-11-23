@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Groove Workbench</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="brand">Groove Workbench</div>
+  <div id="songName" class="song-name">No song loaded</div>
+  <div id="status" class="pill" hidden></div>
+  <div class="spacer"></div>
+  <button id="settingsBtn" title="Folders, defaults for new sections, and layers">Settings</button>
+  <div class="transport">
+    <button id="playSong" title="Play the song from the playhead (Shift+Space)">▶ Song</button>
+    <span id="clock" class="clock">0:00.0</span>
+  </div>
+  <div class="mixer" title="What you hear. Keys: S song, D drum stem, M MIDI">
+    <label class="mix"><button data-mute="song" class="mute on">Song</button><input data-gain="song" type="range" min="0" max="1" step="0.01" value="0.8"></label>
+    <label class="mix"><button data-mute="drums" class="mute">Drum stem</button><input data-gain="drums" type="range" min="0" max="1" step="0.01" value="0.9"></label>
+    <label class="mix"><button data-mute="midi" class="mute on">MIDI</button><input data-gain="midi" type="range" min="0" max="1" step="0.01" value="0.9"></label>
+    <label class="mix"><button data-mute="click" class="mute">Click</button></label>
+  </div>
+</header>
+
+<div class="layout">
+  <aside id="library">
+    <div class="lib-head">
+      <div class="label">Song folder</div>
+      <div class="row"><input id="libDir" type="text" spellcheck="false" title="Type or paste a folder path and press Enter"><button id="libLoad" title="Choose a folder on this computer">Browse…</button></div>
+    </div>
+    <div id="libList" class="lib-list"></div>
+    <div class="lib-foot">Or drop an audio file anywhere.</div>
+  </aside>
+
+  <main>
+    <div id="empty" class="empty">
+      <div class="empty-box">
+        <div class="empty-title">Drop a song here</div>
+        <div class="empty-sub">or pick one from the folder list. MP3, M4A, WAV, FLAC.</div>
+        <input id="filePick" type="file" accept="audio/*,.mp3,.m4a,.wav,.flac,.aif,.aiff" hidden>
+        <button id="pickBtn">Choose a file</button>
+      </div>
+    </div>
+
+    <div id="work" hidden>
+      <section class="panel">
+        <div class="panel-head">
+          <div class="label">Song</div>
+          <div class="hint">Drag on the waveform to mark a section. Click to move the playhead. Pinch or ⌘-scroll to zoom.</div>
+          <div class="spacer"></div>
+          <button id="zoomOut" title="Zoom out">−</button>
+          <button id="zoomIn" title="Zoom in">+</button>
+          <button id="zoomFit" title="Show the whole song">Fit</button>
+          <button id="zoomSel" title="Zoom to the selected section">Section</button>
+        </div>
+        <div class="canvas-wrap" id="ovWrap">
+          <canvas id="ov"></canvas>
+          <canvas id="ovTop" class="top"></canvas>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div class="label">Sections</div>
+          <div id="secHint" class="hint"></div>
+          <div class="spacer"></div>
+          <button id="exportAll">Export all sections</button>
+        </div>
+        <div id="secList" class="sec-list"></div>
+      </section>
+
+      <section class="panel" id="editor" hidden>
+        <div id="needExtract" class="need" hidden>
+          <button id="extractBig" class="primary big">Extract drums for this section</button>
+          <div class="hint" id="needHint">Finds the tempo and the downbeat, snaps the section to whole bars, and reads the kick, snare and hats.</div>
+        </div>
+
+        <div id="edBody" hidden>
+          <div class="toolbar">
+            <button id="loopBtn" class="primary" title="Loop this section (Space)">▶ Loop</button>
+            <label class="field">BPM <input id="bpm" type="number" step="0.01" min="30" max="400"></label>
+            <span class="group"><button id="half" title="Same notes counted at half tempo">÷2</button><button id="dbl" title="Same notes counted at double tempo">×2</button></span>
+            <span class="field">Bars <span class="seg" id="bars"><button data-b="1">1</button><button data-b="2">2</button><button data-b="4">4</button><button data-b="8">8</button></span></span>
+            <label class="field">Meter <select id="meter"><option>4/4</option><option>3/4</option><option>6/8</option></select></label>
+            <label class="field">Grid <select id="swing"><option value="straight">Straight 16ths</option><option value="swing8">Swing 8ths</option><option value="shuffle16">Shuffle 16ths</option></select></label>
+            <span class="field">Beat 1 <span class="group"><button id="dbL" title="Move bar 1 one beat earlier">◀ beat</button><button id="dbR" title="Move bar 1 one beat later">beat ▶</button></span></span>
+            <span class="field">Nudge <span class="group"><button id="ngL" title="Grid 2 ms earlier (Shift: 10 ms)">◀</button><button id="ngR" title="Grid 2 ms later (Shift: 10 ms)">▶</button></span></span>
+            <div class="spacer"></div>
+            <button id="moreRows" title="Show toms, tambourine and shaker rows">More drums</button>
+            <button id="undo" title="Undo (⌘Z)">Undo</button>
+            <button id="redetect" title="Read the drums again from the audio and discard edits">Re-detect</button>
+          </div>
+
+          <div class="toolbar">
+            <span class="field">Layers <span class="seg" id="layers"></span></span>
+            <span class="hint" id="layerHint"></span>
+          </div>
+          <div class="toolbar">
+            <span class="field" title="Which drum plays the snare hits read from the record">Backbeat as <span class="seg" id="backbeat"><button data-p="37">Rim click</button><button data-p="38">Snare</button></span></span>
+            <span class="field" title="Which drum plays the hi-hat hits read from the record">Hats as <span class="seg" id="hatsAs"><button data-p="42">Hi-hat</button><button data-p="82">Shaker</button></span></span>
+            <span class="sep"></span>
+            <span class="field" title="Click a row name to select it, then write a steady pattern into it">Fill <b id="rowName"></b> <span class="group" id="fill"><button data-k="24">2 &amp; 4</button><button data-k="4">Quarters</button><button data-k="8">8ths</button><button data-k="16">16ths</button><button data-k="clear">Clear</button></span></span>
+          </div>
+
+          <div class="canvas-wrap" id="edWrap">
+            <canvas id="ed"></canvas>
+            <canvas id="edTop" class="top"></canvas>
+          </div>
+          <div class="hint ed-hint">Click a cell to add or remove a hit. Drag a hit up or down for velocity. Faint dots are quieter hits the detector heard. Drag the drum waveform sideways to slide the audio under the grid.</div>
+
+          <div class="toolbar lower">
+            <span class="field" title="How quiet a hit can be and still be kept">Sensitivity
+              <label class="mini">Kick <input id="sKick" type="range" min="0" max="1" step="0.02"></label>
+              <label class="mini">Snare <input id="sSnare" type="range" min="0" max="1" step="0.02"></label>
+              <label class="mini">Hats <input id="sHat" type="range" min="0" max="1" step="0.02"></label>
+            </span>
+            <span class="sep"></span>
+            <span class="field">Feel
+              <span class="seg" id="feelMode">
+                <button data-m="quant" title="Every hit exactly on the grid">On the grid</button>
+                <button data-m="played" title="Timing as the drummer on the record played it">As recorded</button>
+                <button data-m="ni" title="Timing and dynamics learned from your own library of MIDI grooves">Library feel</button>
+              </span>
+            </span>
+            <select id="feelPick" class="wide"></select>
+            <label class="mini">Timing <input id="fTiming" type="range" min="0" max="2" step="0.05"><span id="fTimingV" class="val"></span></label>
+            <label class="mini" id="fVelWrap" title="How hard each hit is played: as on the record, as in the library groove, or a blend of the two">Dynamics <span class="end">Recorded</span><input id="fVel" type="range" min="0" max="1" step="0.05"><span class="end">Library</span></label>
+            <div class="spacer"></div>
+            <button id="exportBtn" class="primary" title="Writes one .mid per layer, plus the full groove">Export layers</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<dialog id="settings">
+  <div class="set">
+    <h2>Settings</h2>
+
+    <h3>Folders</h3>
+    <div class="set-row"><label for="set_songs_dir">Songs</label><input id="set_songs_dir" type="text" spellcheck="false"><button type="button" data-browse="songs_dir">Browse…</button><div class="st" id="st_songs_dir"></div></div>
+    <div class="set-row"><label for="set_kit_dir">Drum kit</label><input id="set_kit_dir" type="text" spellcheck="false"><button type="button" data-browse="kit_dir">Browse…</button><div class="st" id="st_kit_dir"></div></div>
+    <div class="set-row"><label for="set_exports_dir">Exports</label><input id="set_exports_dir" type="text" spellcheck="false"><button type="button" data-browse="exports_dir">Browse…</button><div class="st" id="st_exports_dir"></div></div>
+    <div class="set-row"><label for="set_feel_dir">Learned feel</label><input id="set_feel_dir" type="text" spellcheck="false"><button type="button" data-browse="feel_dir">Browse…</button><div class="st" id="st_feel_dir"></div></div>
+
+    <h3>Learn feel from your MIDI grooves</h3>
+    <div class="set-row"><label for="learnDir">MIDI folder</label><input id="learnDir" type="text" spellcheck="false" placeholder="A folder of drum-groove .mid files"><button type="button" data-browse="learn">Browse…</button><button type="button" id="learnBtn">Learn</button><div class="st" id="st_learn">Measures timing and accents only and saves them to the Learned feel folder, replacing what is there. The MIDI files are not copied.</div></div>
+
+    <h3>New sections start with</h3>
+    <div class="set-line">
+      <span class="field">Backbeat as <span class="seg" id="setBackbeat"><button type="button" data-v="0">Snare</button><button type="button" data-v="1">Rim click</button></span></span>
+      <span class="field">Hats as <span class="seg" id="setHats"><button type="button" data-v="0">Hi-hat</button><button type="button" data-v="1">Shaker</button></span></span>
+      <label class="field"><input type="checkbox" id="setTamb"> Tambourine on 2 and 4</label>
+    </div>
+
+    <h3>Layers</h3>
+    <div class="set-note">Stripped-down versions of each groove, exported as their own files alongside the full groove. Pick the drums each one keeps. With no layers, each section exports as one file.</div>
+    <div id="setLayers"></div>
+    <button type="button" id="setAddLayer">Add layer</button>
+
+    <div class="set-foot"><span id="setErr"></span><span class="spacer"></span><button type="button" id="setCancel">Cancel</button><button type="button" id="setSave" class="primary">Save</button></div>
+  </div>
+</dialog>
+
+<div id="dropVeil" class="veil" hidden><div>Drop to load</div></div>
+<div id="toast" class="toast" hidden></div>
+<datalist id="names"><option>Intro</option><option>Verse</option><option>Pre-chorus</option><option>Chorus</option><option>Bridge</option><option>Outro</option></datalist>
+<script type="module" src="app.js"></script>
+</body>
+</html>

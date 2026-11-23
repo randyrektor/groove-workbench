@@ -1,0 +1,26 @@
+# Your own material never goes in the repo: songs, kits, learned feel, exports.
+*.mp3
+*.m4a
+*.mp4
+*.aac
+*.wav
+*.flac
+*.aif
+*.aiff
+*.ogg
+*.opus
+*.mid
+*.midi
+/config.json
+/mp3s/
+/feel/
+/exports/
+/video-outline.md
+
+# Machine state
+app/.venv/
+app/.work/
+__pycache__/
+*.pyc
+.DS_Store
+.claude/

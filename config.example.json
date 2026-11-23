@@ -1,0 +1,12 @@
+{
+  "songs_dir": "",
+  "kit_dir": "",
+  "feel_dir": "feel",
+  "exports_dir": "exports",
+  "defaults": {
+    "backbeat": "snare",
+    "hats": "hihat",
+    "tambourine": "none",
+    "layers": []
+  }
+}
