@@ -152,6 +152,34 @@ def index():
     return send_from_directory(app.static_folder, "index.html")
 
 
+LOCAL_HOSTS = {"127.0.0.1", "localhost", "[::1]"}
+
+
+def _hostname(netloc):
+    """'127.0.0.1:5177' -> '127.0.0.1', '[::1]:5177' -> '[::1]'."""
+    netloc = (netloc or "").strip().lower()
+    if netloc.startswith("["):
+        return netloc.split("]")[0] + "]"
+    return netloc.rsplit(":", 1)[0] if ":" in netloc else netloc
+
+
+@app.before_request
+def local_only():
+    """Only this machine's own browser tab may talk to the app, not other websites.
+
+    The Host check stops a site that points its own domain at 127.0.0.1 (DNS rebinding).
+    The Origin and Sec-Fetch-Site checks stop another site's page from calling the API.
+    """
+    if _hostname(request.host) not in LOCAL_HOSTS:
+        abort(403)
+    if request.path.startswith("/api/"):
+        origin = request.headers.get("Origin")
+        if origin and origin.split("://", 1)[-1].lower() != request.host.lower():
+            abort(403)
+        if request.headers.get("Sec-Fetch-Site", "same-origin") not in ("same-origin", "none"):
+            abort(403)
+
+
 @app.after_request
 def no_cache(resp):
     if request.path.endswith((".js", ".css", ".html")) or request.path == "/":
@@ -448,7 +476,7 @@ def export(sid):
     return jsonify({"path": str(path), "rel": str(path.relative_to(ROOT)) if ROOT in path.parents else str(path), "notes": len(body["notes"])})
 
 
-# ----------------------------------------------------------------- NI feel
+# ----------------------------------------------------------- library feel
 
 _feel_cache = {}
 PART_LABEL = {"none": "no hats", "quarter": "quarter hats", "eighth": "8th hats", "sixteenth": "16th hats"}
